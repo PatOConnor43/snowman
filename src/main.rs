@@ -222,6 +222,7 @@ fn resolve_env_name(environment: &Environment) -> String {
 
 fn config() -> Result<Config, Box<dyn Error>> {
     let config_directory = get_config_path();
+    std::fs::create_dir_all(&config_directory)?;
     let config_file = format!("{}/snowman.toml", config_directory);
     let c = Config::from_config_file(&config_file);
     if let Err(_) = c {
@@ -233,10 +234,14 @@ cookie =
 # The value of your domain is the url you use for your workspace. An example would be 'https://dark-trinity-5058.postman.co'
 domain = 
 ");
-        let content = content_result?.unwrap();
+        let content = content_result?;
+        if content.is_none() {
+            Err("Failed to write valid config")?
+        }
+        let content = content.unwrap();
         eprintln!("Writing to {}", config_file);
         std::fs::write(config_file.to_string(), content)?;
-        return Ok(Config::from_config_file(&config_file).unwrap());
+        return Ok(Config::from_config_file(&config_file)?)
     }
     Ok(c.unwrap().clone())
 }

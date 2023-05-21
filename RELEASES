@@ -1,0 +1,4 @@
+
+# Version 0.1.1 (2023-05-21)
+- Fix bug related to missing configuration folder. This should create the folder
+  If it doesn't already exist.
