@@ -1,4 +1,4 @@
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::{Parser, Subcommand};
 use dialoguer::Editor;
 use dialoguer::{theme::ColorfulTheme, FuzzySelect};
 use std::collections::HashMap;
@@ -89,14 +89,6 @@ struct Config {
     environment: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Entity {
-    model_id: String,
-    meta: EnvironmentMeta,
-    data: Data,
-    revision: i64,
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct EnvironmentMeta {
     model: String,
@@ -115,40 +107,12 @@ struct ForkedFrom {
     created_at: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Data {
-    owner: String,
-    team: Option<String>,
-    #[serde(rename = "lastUpdatedBy")]
-    last_updated_by: String,
-    #[serde(rename = "lastRevision")]
-    last_revision: i64,
-    id: String,
-    name: String,
-    values: Vec<Value>,
-    #[serde(rename = "createdAt")]
-    created_at: String,
-    #[serde(rename = "updatedAt")]
-    updated_at: String,
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Value {
     key: String,
     value: String,
     enabled: bool,
     r#type: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Entities {
-    entities: Vec<Entity>,
-    max_id: u64,
-    count: u64,
-    since_id: u64,
-    last_since_id: u64,
-    sync_timestamp: u64,
-    reset_timestamp: u64,
 }
 
 /// A fictional versioning CLI
@@ -162,12 +126,11 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    // config
-    Config,
-    // Print snowman shell activation to stdout
-    Env,
-    // asdf
+    #[command(about = "Activate a subshell with active environment variable")]
     Activate,
+
+    #[command(about = "Print the current configuration to stdout")]
+    Config,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -177,10 +140,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             let c = config()?;
             println!("cookie = \"{}\"\ndomain = \"{}\"", c.cookie, c.domain);
             Ok(())
-        }
-        Commands::Env => {
-            let c = config()?;
-            env(c)
         }
         Commands::Activate => {
             let c = config()?;
@@ -290,54 +249,4 @@ fn get_config_path() -> String {
             format!("{}/.config/snowman", home_path.to_str().unwrap())
         }
     }
-}
-
-fn env(config: Config) -> Result<(), Box<dyn Error>> {
-    let active_environment = match config.environment {
-        Some(e) => e,
-        None => Err(
-            "No active environment found. Please run `snowman switch` to activate an environment.",
-        )?,
-    };
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        reqwest::header::COOKIE,
-        HeaderValue::from_str(&config.cookie).unwrap(),
-    );
-
-    let rest_client = reqwest::blocking::ClientBuilder::default()
-        .default_headers(headers.clone())
-        .build()?;
-    let response: String = rest_client
-        .get(format!(
-            "{}/_api/environment/{}/sync?since_id=0",
-            config.domain, active_environment,
-        ))
-        .send()
-        .unwrap()
-        .text()
-        .unwrap();
-    let entities = serde_json::from_str::<Entities>(&response).unwrap();
-    let values = &entities.entities[0].data.values;
-    let unsets = values.iter().fold(String::new(), |acc, v| {
-        format!("{}\n    unset -f _SNOWMAN_{}", acc, v.key)
-    });
-    let sets = values.iter().fold(String::new(), |acc, v| {
-        format!("{}\n_SNOWMAN_{}() {{ echo -n '{}' }}", acc, v.key, v.value)
-    });
-    let template = format!(
-        r"
-snowman-exit () {{
-{}
-    unset SNOWMAN
-    unset -f snowman-exit
-}}
-SNOWMAN=1
-{}
-",
-        unsets, sets
-    );
-    println!("{}", template);
-
-    Ok(())
 }
