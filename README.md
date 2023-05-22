@@ -27,3 +27,9 @@ If I need to change to an environment where the DOMAIN variable is different, I 
 ## Changelog
 Look at the RELEASES file for information and release notes.
 
+## Releasing
+This project uses [cargo dist](https://github.com/axodotdev/cargo-dist) to manage the Github Action release and [cargo release](https://github.com/crate-ci/cargo-release) to simplify tagging.
+
+When upgrading cargo dist, you are expected to run `cargo dist init` again to update the generated workflow.
+
+In order to actually cut a release, run `cargo release patch` (A specific version, minor, or major) are also valid.
