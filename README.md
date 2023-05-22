@@ -1,5 +1,10 @@
 # Snowman
-A CLI tool for interacting with Postman.
+<p align="center">
+  <img src="https://github.com/PatOConnor43/snowman/assets/6657525/6afba551-934a-45fa-b348-e81e437a8a1d" width="250"/>
+</p>
+<p align="center">
+<em> A CLI tool for interacting with Postman</em>
+</p>
 
 **This software is very alpha and the API can change with any release.**
 
