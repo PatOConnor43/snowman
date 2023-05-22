@@ -38,4 +38,4 @@ targets = ["x86_64-unknown-linux-gnu", "x86_64-apple-darwin", "aarch64-apple-dar
 [workspace.metadata.release]
 allow-branch = ["master"]
 publish = false
-tag-message = "Release version {{version}}"
+pre-release-commit-message = "Release version {{version}}"
