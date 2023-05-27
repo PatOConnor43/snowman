@@ -154,8 +154,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .map(|v| (format!("SNOWMAN_{}", v.key), v.value.to_string()))
                 .collect::<HashMap<String, String>>();
             values_map.insert("_SNOWMAN_ENVIRONMENT_NAME".to_string(), environment_name);
+            let info_header = "The following environment variables have been set:";
+            let mut info_body: Vec<String> = values_map.iter().map(|pair| format!("{}: {}", pair.0, pair.1)).collect();
+            info_body.sort();
+            println!("\n{}\n{}", info_header, info_body.join("\n"));
             Command::new(shell)
-                .envs(values_map)
+                .envs(values_map.clone())
                 .status()
                 .expect("Failed to create shell");
             Ok(())
