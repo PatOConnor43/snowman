@@ -3,7 +3,7 @@ edition = "2021"
 license = "MIT"
 name = "snowman"
 repository = "https://github.com/PatOConnor43/snowman"
-version = "0.2.1"
+version = "0.3.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
