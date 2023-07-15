@@ -79,13 +79,9 @@ pub struct Workspace {
 #[derive(Clone, Deserialize, Debug, Serialize)]
 struct Config {
     apikey: String,
-    cookie: String,
-    domain: String,
-    environment: Option<String>,
 }
 
-/// A fictional versioning CLI
-#[derive(Debug, Parser)] // requires `derive` feature
+#[derive(Debug, Parser)]
 #[command(name = "snowman")]
 #[command(about = "Bring Postman into your terminal", long_about = None)]
 struct Cli {
@@ -95,7 +91,7 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    #[command(about = "Activate a subshell with active environment variable")]
+    #[command(about = "Activate a sub-shell with active environment variable")]
     Activate,
 
     #[command(about = "Print the current configuration to stdout")]
@@ -107,7 +103,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     match args.command {
         Commands::Config => {
             let c = config()?;
-            println!("cookie = \"{}\"\ndomain = \"{}\"", c.cookie, c.domain);
+            println!("apikey = \"{}\"", c.apikey);
             Ok(())
         }
         Commands::Activate => {
@@ -203,11 +199,9 @@ fn config() -> Result<Config, Box<dyn Error>> {
     if let Err(_) = c {
         let content_result = Editor::new().edit(r"# Snowman Config
 #
-# The value of your cookie should look something like: 'postman.sid=...'
-cookie =
-
-# The value of your domain is the url you use for your workspace. An example would be 'https://dark-trinity-5058.postman.co'
-domain = 
+# The value of your public API token should look like: 'PMAK-xxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.
+# You can make an API key at https://<domain>/settings/me/api-keys
+apikey =
 ");
         let content = content_result?;
         if content.is_none() {
