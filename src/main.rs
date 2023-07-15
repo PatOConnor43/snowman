@@ -149,7 +149,6 @@ fn activate(config: Config) -> Result<Environment, Box<dyn Error>> {
         .unwrap()
         .text()
         .unwrap();
-    dbg!(&response);
     let response = serde_json::from_str::<WorkspacesResponse>(&response).unwrap();
     let selections = response.workspaces
         .iter()
