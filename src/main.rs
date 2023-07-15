@@ -13,110 +13,75 @@ use serde::{Deserialize, Serialize};
 
 use config_file::FromConfigFile;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct Environment {
-    meta: EnvironmentMeta,
-    model_id: String,
-    data: EnvironmentData,
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EnvironmentResponse {
+    pub environment: Environment,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct EnvironmentData {
-    //owner: String,
-    team: Option<String>,
-    #[serde(rename = "lastUpdatedBy")]
-    last_updated_by: String,
-    #[serde(rename = "lastRevision")]
-    last_revision: i64,
-    id: String,
-    name: String,
-    values: Vec<Value>,
-    #[serde(rename = "createdAt")]
-    created_at: String,
-    #[serde(rename = "updatedAt")]
-    updated_at: String,
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Environment {
+    pub id: String,
+    pub name: String,
+    pub owner: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub values: Vec<Value>,
+    pub is_public: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct WorkspaceMeta {
-    model: String,
-    action: String,
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Value {
+    pub key: String,
+    pub value: String,
+    pub enabled: bool,
+    #[serde(rename = "type")]
+    pub type_field: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct WorkspaceMembers {
-    users: serde_json::Map<String, serde_json::Value>,
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EnvironmentDigestsResponse {
+    pub environments: Vec<EnvironmentDigest>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct WorkspaceDataState {
-    is_default: bool,
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EnvironmentDigest {
+    pub id: String,
+    pub name: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub owner: String,
+    pub uid: String,
+    pub is_public: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct WorkspaceData {
-    id: String,
-    name: String,
-    description: Option<String>,
-    summary: String,
-    #[serde(rename = "createdBy")]
-    created_by: String,
-    #[serde(rename = "updatedBy")]
-    updated_by: String,
-    team: Option<String>,
-    #[serde(rename = "createdAt")]
-    created_at: String,
-    #[serde(rename = "updatedAt")]
-    updated_at: String,
-    #[serde(rename = "visibilityStatus")]
-    visibility_status: String,
-    r#type: String,
-    members: WorkspaceMembers,
-    data: Option<serde_json::Value>,
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspacesResponse {
+    pub workspaces: Vec<Workspace>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Workspace {
-    meta: WorkspaceMeta,
-    model_id: String,
-    data: WorkspaceData,
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Workspace {
+    pub id: String,
+    pub name: String,
+    #[serde(rename = "type")]
+    pub type_field: String,
+    pub visibility: String,
 }
 
 #[derive(Clone, Deserialize, Debug, Serialize)]
 struct Config {
-    cookie: String,
-    domain: String,
-    environment: Option<String>,
+    apikey: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct EnvironmentMeta {
-    model: String,
-    action: String,
-    #[serde(rename = "forkedFrom")]
-    forked_from: Option<ForkedFrom>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct ForkedFrom {
-    id: String,
-    #[serde(rename = "forkName")]
-    fork_name: String,
-    name: String,
-    #[serde(rename = "createdAt")]
-    created_at: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct Value {
-    key: String,
-    value: String,
-    enabled: bool,
-    r#type: String,
-}
-
-/// A fictional versioning CLI
-#[derive(Debug, Parser)] // requires `derive` feature
+#[derive(Debug, Parser)]
 #[command(name = "snowman")]
 #[command(about = "Bring Postman into your terminal", long_about = None)]
 struct Cli {
@@ -126,7 +91,7 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    #[command(about = "Activate a subshell with active environment variable")]
+    #[command(about = "Activate a sub-shell with active environment variable")]
     Activate,
 
     #[command(about = "Print the current configuration to stdout")]
@@ -138,18 +103,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     match args.command {
         Commands::Config => {
             let c = config()?;
-            println!("cookie = \"{}\"\ndomain = \"{}\"", c.cookie, c.domain);
+            println!("apikey = \"{}\"", c.apikey);
             Ok(())
         }
         Commands::Activate => {
             let c = config()?;
             let environment = activate(c)?;
-            let environment_name = resolve_env_name(&environment);
-            let values = environment.data.values;
+            let environment_name = environment.name;
+            let values = environment.values;
             // Using this env var to determine what subshell to open probably isn't fullproof, but
             // good enough?
             let shell = var("SHELL").expect("Could not find active SHELL environment");
-            let mut values_map = values
+            let mut values_map =
+                values
                 .iter()
                 .map(|v| (format!("SNOWMAN_{}", v.key), v.value.to_string()))
                 .collect::<HashMap<String, String>>();
@@ -170,23 +136,24 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn activate(config: Config) -> Result<Environment, Box<dyn Error>> {
     let mut headers = HeaderMap::new();
     headers.insert(
-        reqwest::header::COOKIE,
-        HeaderValue::from_str(&config.cookie).unwrap(),
+        "X-Api-Key",
+        HeaderValue::from_str(&config.apikey).unwrap(),
     );
 
     let rest_client = reqwest::blocking::ClientBuilder::default()
         .default_headers(headers.clone())
         .build()?;
     let response: String = rest_client
-        .get(format!("{}/_api/workspace", config.domain))
+        .get(format!("https://api.getpostman.com/workspaces"))
         .send()
         .unwrap()
         .text()
         .unwrap();
-    let workspaces = serde_json::from_str::<Vec<Workspace>>(&response).unwrap();
-    let selections = workspaces
+    dbg!(&response);
+    let response = serde_json::from_str::<WorkspacesResponse>(&response).unwrap();
+    let selections = response.workspaces
         .iter()
-        .map(|workspace| workspace.data.name.to_string())
+        .map(|workspace| workspace.name.to_string())
         .collect::<Vec<String>>();
     let selection = FuzzySelect::with_theme(&ColorfulTheme::default())
         .with_prompt("Pick your workspace")
@@ -194,18 +161,18 @@ fn activate(config: Config) -> Result<Environment, Box<dyn Error>> {
         .items(&selections[..])
         .interact()
         .unwrap();
-    let workspace = &workspaces[selection];
+    let workspace = &response.workspaces[selection];
     let response: String = rest_client
-        .get(format!("{}/_api/environment", config.domain))
-        .query(&[("workspace", &workspace.model_id)])
+        .get(format!("https://api.getpostman.com/environments"))
+        .query(&[("workspace", &workspace.id)])
         .send()
         .unwrap()
         .text()
         .unwrap();
-    let environments = serde_json::from_str::<Vec<Environment>>(&response).unwrap();
-    let selections = environments
+    let response = serde_json::from_str::<EnvironmentDigestsResponse>(&response).unwrap();
+    let selections = response.environments
         .iter()
-        .map(|e| resolve_env_name(e))
+        .map(|e| e.name.to_string())
         .collect::<Vec<String>>();
     let selection = FuzzySelect::with_theme(&ColorfulTheme::default())
         .with_prompt("Pick your environment")
@@ -213,15 +180,15 @@ fn activate(config: Config) -> Result<Environment, Box<dyn Error>> {
         .items(&selections[..])
         .interact()
         .unwrap();
+    let response: String = rest_client
+        .get(format!("https://api.getpostman.com/environments/{}", response.environments[selection].id))
+        .send()
+        .unwrap()
+        .text()
+        .unwrap();
+    let response = serde_json::from_str::<EnvironmentResponse>(&response).unwrap();
 
-    Ok(environments[selection].clone())
-}
-
-fn resolve_env_name(environment: &Environment) -> String {
-    match &environment.meta.forked_from {
-        Some(forked_from) => format!("{} [{}]", forked_from.fork_name, forked_from.name),
-        None => format!("{}", environment.data.name),
-    }
+    Ok(response.environment)
 }
 
 fn config() -> Result<Config, Box<dyn Error>> {
@@ -231,12 +198,10 @@ fn config() -> Result<Config, Box<dyn Error>> {
     let c = Config::from_config_file(&config_file);
     if let Err(_) = c {
         let content_result = Editor::new().edit(r"# Snowman Config
-#                                           
-# The value of your cookie should look something like: 'postman.sid=...'
-cookie =
-
-# The value of your domain is the url you use for your workspace. An example would be 'https://dark-trinity-5058.postman.co'
-domain = 
+#
+# The value of your public API token should look like: 'PMAK-xxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.
+# You can make an API key at https://<domain>/settings/me/api-keys
+apikey =
 ");
         let content = content_result?;
         if content.is_none() {
