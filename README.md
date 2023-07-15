@@ -24,7 +24,7 @@ If I need to change to an environment where the DOMAIN variable is different, I 
 ## Setup
 - Use the install script within the release page
 - Create a Postman API key. You can do that at https://<your domain>/settings/me/api-keys
-- Use `snowman config` to populate your config. This will open your $EDITOR with prepopulated keys. You'll need to fill in the `cookie` and `domain` values.
+- Use `snowman config` to populate your config. This will open your $EDITOR with a template. You'll need to fill in the `apikey` value.
 - Use `snowman activate` to find the environment you want to inject
 - Use these environment variables to make `curl` requests or anything else you're interested in.
 
